@@ -4,12 +4,13 @@ STICK = 1
 
 class Player(object):
     def __init__(self):
-        self.description = "Base player."
+        self.description = "Base player"
         self.number_of_aces_used = 0
         self.current_total = 0
 
     def new_card_drawn(self, new_card):
-        print "Card drawn:", new_card.number, new_card.suit
+        if self.description == "Human":
+            print "Card drawn:", new_card.number, new_card.suit
         self.current_total += new_card.get_value()
 
         if self.current_total + 10 <= 21 and new_card.get_value() == 1:

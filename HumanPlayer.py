@@ -1,9 +1,8 @@
-import random
 from Player import Player, HIT, STICK
 
 
 class HumanPlayer(Player):
-    def __init__(self, description = "Human."):
+    def __init__(self, description="Human"):
         Player.__init__(self)
         self.description = description
 

@@ -33,14 +33,14 @@ class BlackJack:
 
         return players_total
 
-    def step(self):
+    def step(self, players_actions, print_stuff=False):
         i = 0
         for player in self.players:
             if self.player_done[i] != 0:
                 i += 1
                 continue
 
-            player_action = player.choose_action(self.get_current_state())
+            player_action = players_actions[i]  # player.choose_action(self.get_current_state())
 
             if player_action == HIT:
                 player.new_card_drawn(self.deck.pop_card())
@@ -57,7 +57,10 @@ class BlackJack:
         if sum(self.player_done) == len(self.player_done):
             while self.dealer.current_total < 17 and not self.dealer.is_bust():
                 self.dealer.new_card_drawn(self.deck.pop_card())
-            print "\nDealer's total:", self.dealer.current_total
+
+            if print_stuff:
+                print "\nDealer's total:", self.dealer.current_total
+
             if self.dealer.is_bust():
                 self.dealer.current_total = -1
 
