@@ -2,13 +2,14 @@ import random
 
 
 class Deck:
-    def __init__(self, seed=9000):
+    def __init__(self, seed=9000, n_decks=1):
         random.seed(seed)
 
         self.deck = []
-        for number in range(1, 14):
-            for suit in ['S', 'C', 'H', 'D']:
-                self.deck.append(Card(suit, number))
+        for i in range(0, n_decks):
+            for number in range(1, 14):
+                for suit in ['S', 'C', 'H', 'D']:
+                    self.deck.append(Card(suit, number))
 
         self.shuffle_deck()
 

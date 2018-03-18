@@ -5,7 +5,7 @@ from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
 
-def plotQValues (q, action=0):
+def plotQValues (q, action=1):
 
     Z = q[:, :, 0, action]
 

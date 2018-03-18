@@ -3,7 +3,7 @@ from Player import Player, HIT, STICK
 
 
 class RandomPlayer(Player):
-    def __init__(self, seed, description = "Random"):
+    def __init__(self, seed, description="Random"):
         Player.__init__(self)
         random.seed(seed)
         self.description = description
