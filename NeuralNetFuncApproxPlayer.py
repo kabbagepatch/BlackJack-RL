@@ -3,17 +3,18 @@ from numpy import random
 from BlackJack import BlackJack
 from Player import Player, HIT, STICK
 from copy import deepcopy
+from QNetwork import Network
 
 
-class LinFuncApproxPlayer(Player):
+class NeuralNetFuncApproxPlayer(Player):
     def __init__(self, lmbda=0.5):
         Player.__init__(self)
-        self.N = np.zeros([11, 21, 5, 2])
-        self.W = np.zeros([96, ])
+        self.network = Network([96, 50, 1], 10)
         self.epsilon = 0.05
         self.lmbda = lmbda
         self.gamma = 0.7
         self.last_reward = 0
+        self.batch = [[], []]
 
     @staticmethod
     def generate_features(game_state, current_total, number_of_aces_used, action):
@@ -36,9 +37,6 @@ class LinFuncApproxPlayer(Player):
 
         return features.reshape((96, ))
 
-    def get_q_value(self, state, action):
-        return np.dot(self.generate_features(state, self.current_total, self.number_of_aces_used, action), self.W)
-
     def choose_action(self, state):
         if state is None:
             raise StandardError("No game associated to player")
@@ -50,10 +48,15 @@ class LinFuncApproxPlayer(Player):
         if action_choice == 'RAND':
             return random_action
 
-        if self.get_q_value(state, HIT) == self.get_q_value(state, STICK):
+        hit_features = self.generate_features(state, self.current_total, self.number_of_aces_used, HIT)
+        hit_q_value = self.network.get_q_value(hit_features)
+        stick_features = self.generate_features(state, self.current_total, self.number_of_aces_used, STICK)
+        stick_q_value = self.network.get_q_value(stick_features)
+
+        if hit_q_value == stick_q_value:
             return random_action
 
-        if self.get_q_value(state, HIT) == self.get_q_value(state, STICK):
+        if hit_q_value > stick_q_value:
             return HIT
         else:
             return STICK
@@ -67,28 +70,35 @@ class LinFuncApproxPlayer(Player):
         self.number_of_aces_used = 0
         action = self.choose_action(game.get_current_state())
         old_state = deepcopy(game.get_current_state())
-        eligibility_trace = np.zeros([96, ])
         reward = 0
-        alpha = 0.01
 
         while not game.game_over:
             old_total = self.current_total
             old_n_aces = self.number_of_aces_used
-            old_q = self.get_q_value(old_state, action)
 
             game.step([action])
             reward = self.last_reward
-            new_action = self.choose_action(old_state)
+            new_total = self.current_total
+            new_n_aces = self.number_of_aces_used
 
-            new_q = self.get_q_value(game.get_current_state(), new_action) if not game.game_over else 0
-            delta = reward + self.gamma * new_q - old_q
-            eligibility_trace = self.gamma * self.lmbda * eligibility_trace + self.generate_features(old_state, old_total, old_n_aces, action)
-            self.W = self.W + alpha * delta * eligibility_trace
+            if game.game_over:
+                target_q = 0
+            else:
+                target_q = max(self.network.get_q_value(self.generate_features(game.get_current_state(), new_total, new_n_aces, HIT)),
+                               self.network.get_q_value(self.generate_features(game.get_current_state(), new_total, new_n_aces, STICK)))
+            target = reward + self.gamma * target_q
+
+            if len(self.batch[0]) < 10:
+                self.batch[0].append(self.generate_features(old_state, old_total, old_n_aces, action))
+                self.batch[1].append(target)
+            else:
+                self.network.gradient_descent(self.batch, 5)
 
             old_state = deepcopy(game.get_current_state())
-            action = new_action
+            action = self.choose_action(old_state)
         return reward
 
     def run_episodes(self, n):
         for k in range(1, n+1):
             self.run_episode()
+

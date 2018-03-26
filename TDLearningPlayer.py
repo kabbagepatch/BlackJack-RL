@@ -1,14 +1,14 @@
 import numpy as np
-import random
+from numpy import random
 from BlackJack import BlackJack
 from Player import Player, HIT, STICK
 from copy import deepcopy
 
 
 class TDLearningPlayer(Player):
-    def __init__(self, lmbda=0.0):
+    def __init__(self, lmbda=0.5):
         Player.__init__(self)
-        self.Q = np.random.randn(11, 21, 2, 2)
+        self.Q = random.randn(11, 21, 2, 2)
         self.N = np.zeros([11, 21, 2, 2])
         self.epsilon = 1.
         self.lmbda = lmbda
@@ -20,10 +20,9 @@ class TDLearningPlayer(Player):
             raise StandardError("No game associated to player")
 
         dealers_first_card = state[0]
-        random.seed(dealers_first_card)
-        random_action = random.randint(0, 1)
+        random_action = random.randint(0, 2)
 
-        action_choice = np.random.choice(['RAND', 'GREEDY'], p=[self.epsilon, 1 - self.epsilon])
+        action_choice = random.choice(['RAND', 'GREEDY'], p=[self.epsilon, 1 - self.epsilon])
 
         if action_choice == 'RAND':
             return random_action
@@ -41,8 +40,8 @@ class TDLearningPlayer(Player):
     def receive_reward(self, reward):
         self.last_reward = reward
 
-    def run_episode(self, index):
-        game = BlackJack([self], index)
+    def run_episode(self):
+        game = BlackJack([self])
         self.current_total = 0
         self.number_of_aces_used = 0
         action = self.choose_action(game.get_current_state())
@@ -85,6 +84,6 @@ class TDLearningPlayer(Player):
 
     def run_episodes(self, n):
         for k in range(1, n+1):
-            self.run_episode(k)
+            self.run_episode()
 
         return self.Q, self.N

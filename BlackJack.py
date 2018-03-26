@@ -6,8 +6,8 @@ STICK = 1
 
 
 class BlackJack:
-    def __init__(self, players, seed=9000, n_decks=1):
-        self.deck = Deck(seed, n_decks)
+    def __init__(self, players, n_decks=1):
+        self.deck = Deck(n_decks)
         self.players = players
         self.player_done = []
         assert len(self.players) <= 4, "Too many players"

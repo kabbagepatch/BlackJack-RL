@@ -1,10 +1,8 @@
-import random
+from numpy import random
 
 
 class Deck:
-    def __init__(self, seed=9000, n_decks=1):
-        random.seed(seed)
-
+    def __init__(self, n_decks=1):
         self.deck = []
         for i in range(0, n_decks):
             for number in range(1, 14):

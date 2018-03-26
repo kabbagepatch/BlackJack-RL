@@ -27,6 +27,10 @@ class Player(object):
     def get_current_total(self):
         return self.current_total
 
+    def reset(self):
+        self.current_total = 0
+        self.number_of_aces_used = 0
+
     def choose_action(self, state):
         raise NotImplementedError("This player has no brain, and therefore no way to make a choice")
 
