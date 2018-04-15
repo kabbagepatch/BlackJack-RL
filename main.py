@@ -135,8 +135,29 @@ import numpy as np
 # print "MC won", sum(mc_rewards)
 # print "Random won", sum(rand_rewards)
 
-# '''Neural Network Player vs Dealer'''
-# players = [NeuralNetFuncApproxPlayer()]
+'''Neural Network Player vs Dealer'''
+players = [NeuralNetFuncApproxPlayer()]
+
+for player in players:
+    rewards = []
+    for k in range(0, 1):
+        player.reset()
+        player.run_episodes(1000, True)
+        player.epsilon = 0
+
+        for i in range(0, 100):
+            player.reset()
+            new_game = BlackJack([player])
+
+            while not new_game.game_over:
+                new_game.step([player.choose_action(new_game.get_current_state())])
+
+            rewards.append(player.last_reward > 0)
+
+    print player, "won", sum(rewards)
+
+# '''All players vs Dealer'''
+# players = [RandomPlayer(), MonteCarloPlayer(), TDLearningPlayer(), LinFuncApproxPlayer(), NeuralNetFuncApproxPlayer()]
 #
 # for player in players:
 #     rewards = []
@@ -155,24 +176,3 @@ import numpy as np
 #             rewards.append(player.last_reward > 0)
 #
 #     print player, "won", sum(rewards)
-
-'''All players vs Dealer'''
-players = [RandomPlayer(), MonteCarloPlayer(), TDLearningPlayer(), LinFuncApproxPlayer(), NeuralNetFuncApproxPlayer()]
-
-for player in players:
-    rewards = []
-    for k in range(0, 1):
-        player.reset()
-        player.run_episodes(1000)
-        player.epsilon = 0
-
-        for i in range(0, 100):
-            player.reset()
-            new_game = BlackJack([player])
-
-            while not new_game.game_over:
-                new_game.step([player.choose_action(new_game.get_current_state())])
-
-            rewards.append(player.last_reward > 0)
-
-    print player, "won", sum(rewards)

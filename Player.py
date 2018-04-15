@@ -7,11 +7,13 @@ class Player(object):
         self.description = "Base player"
         self.number_of_aces_used = 0
         self.current_total = 0
+        self.current_cards = []
 
     def new_card_drawn(self, new_card):
         if self.description == "Human":
             print "Card drawn:", new_card.number, new_card.suit
         self.current_total += new_card.get_value()
+        self.current_cards.append(new_card)
 
         if self.current_total + 10 <= 21 and new_card.get_value() == 1:
             self.current_total += 10
@@ -26,6 +28,9 @@ class Player(object):
 
     def get_current_total(self):
         return self.current_total
+
+    def get_current_cards(self):
+        return self.current_cards
 
     def reset(self):
         self.current_total = 0

@@ -4,12 +4,14 @@ from BlackJack import BlackJack
 from Player import Player, HIT, STICK
 from copy import deepcopy
 
+N_FEATURES = 96
+
 
 class LinFuncApproxPlayer(Player):
     def __init__(self, lmbda=0.5):
         Player.__init__(self)
         self.N = np.zeros([11, 21, 5, 2])
-        self.W = np.zeros([96, ])
+        self.W = np.zeros([N_FEATURES, ])
         self.epsilon = 0.05
         self.lmbda = lmbda
         self.gamma = 0.7
@@ -34,7 +36,7 @@ class LinFuncApproxPlayer(Player):
         if dealers_first_card <= 11 and current_total <= 21:
             features[(dealers_first_card - 2) / 3][(current_total - 4) / 3][number_of_aces_used][action] = 1
 
-        return features.reshape((96, ))
+        return features.reshape((N_FEATURES, ))
 
     def get_q_value(self, state, action):
         return np.dot(self.generate_features(state, self.current_total, self.number_of_aces_used, action), self.W)
@@ -67,7 +69,7 @@ class LinFuncApproxPlayer(Player):
         self.number_of_aces_used = 0
         action = self.choose_action(game.get_current_state())
         old_state = deepcopy(game.get_current_state())
-        eligibility_trace = np.zeros([96, ])
+        eligibility_trace = np.zeros([N_FEATURES, ])
         reward = 0
         alpha = 0.01
 

@@ -33,6 +33,13 @@ class BlackJack:
 
         return players_total
 
+    def get_detailed_state(self):
+        all_cards = [self.dealer.get_current_cards()]
+        for player in self.players:
+            all_cards.append(player.get_current_cards())
+
+        return all_cards
+
     def step(self, players_actions, print_stuff=False):
         i = 0
         for player in self.players:

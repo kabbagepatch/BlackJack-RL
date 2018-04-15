@@ -15,7 +15,7 @@ def convert_to_shared(data):
 
 
 class Layer(object):
-    def __init__(self, layer_input, n_in, n_out, batch_size, activation_fn=T.nnet.sigmoid):
+    def __init__(self, layer_input, n_in, n_out, activation_fn=T.nnet.relu):
         self.w = theano.shared(np.asarray(np.random.normal(loc=0.0, scale=np.sqrt(1.0 / n_out), size=(n_in, n_out)), dtype=theano.config.floatX))
         self.b = theano.shared(np.asarray(np.zeros((n_out,), dtype=theano.config.floatX)))
 
@@ -24,21 +24,21 @@ class Layer(object):
         self.params = [self.w, self.b]
 
     def cost(self, net):
-        return T.mean(T.square(T.argmax(self.output, axis=1) - net.y))
+        return T.mean(T.square(self.output - net.y[0]))
 
     def output_value(self):
-        return self.output
+        return T.dot(self.input, self.w) + self.b
 
 
 class Network(object):
-    def __init__(self, layer_sizes, batch_size):
+    def __init__(self, layer_sizes):
         self.x = T.matrix("x")
         self.y = T.vector("y")
 
         self.layers = []
         next_input = self.x
         for x, y in zip(layer_sizes[:-1], layer_sizes[1:]):
-            layer = Layer(next_input, x, y, batch_size)
+            layer = Layer(next_input, x, y)
             self.layers.append(layer)
             next_input = layer.output
 
@@ -75,4 +75,4 @@ class Network(object):
             }
         )
 
-        return predict()
+        return predict()[0][0]

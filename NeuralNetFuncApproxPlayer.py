@@ -3,13 +3,18 @@ from numpy import random
 from BlackJack import BlackJack
 from Player import Player, HIT, STICK
 from copy import deepcopy
-from QNetwork import Network
+from QNetwork_Theano import Network
+from QNetwork_Tensorflow import Network as Network2
+
+BATCH_SIZE = 5
+N_EPOCHS = 5
+N_FEATURES = 96
 
 
 class NeuralNetFuncApproxPlayer(Player):
     def __init__(self, lmbda=0.5):
         Player.__init__(self)
-        self.network = Network([96, 50, 1], 10)
+        self.network = Network2([N_FEATURES, 200, 50, 1])
         self.epsilon = 0.05
         self.lmbda = lmbda
         self.gamma = 0.7
@@ -35,7 +40,7 @@ class NeuralNetFuncApproxPlayer(Player):
         if dealers_first_card <= 11 and current_total <= 21:
             features[(dealers_first_card - 2) / 3][(current_total - 4) / 3][number_of_aces_used][action] = 1
 
-        return features.reshape((96, ))
+        return features.reshape((N_FEATURES, ))
 
     def choose_action(self, state):
         if state is None:
@@ -88,17 +93,21 @@ class NeuralNetFuncApproxPlayer(Player):
                                self.network.get_q_value(self.generate_features(game.get_current_state(), new_total, new_n_aces, STICK)))
             target = reward + self.gamma * target_q
 
-            if len(self.batch[0]) < 10:
+            if len(self.batch[0]) < BATCH_SIZE:
                 self.batch[0].append(self.generate_features(old_state, old_total, old_n_aces, action))
                 self.batch[1].append(target)
             else:
-                self.network.gradient_descent(self.batch, 5)
+                self.network.gradient_descent(self.batch, N_EPOCHS)
+                self.batch = [[], []]
 
             old_state = deepcopy(game.get_current_state())
             action = self.choose_action(old_state)
         return reward
 
-    def run_episodes(self, n):
+    def run_episodes(self, n, print_stuff=False):
         for k in range(1, n+1):
+            if print_stuff:
+                if k % 100 == 0:
+                    print 'Episode', k
             self.run_episode()
 
