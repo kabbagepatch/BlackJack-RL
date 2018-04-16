@@ -26,7 +26,9 @@ class BlackJack:
 
         self.game_over = False
 
-    def get_current_state(self):
+    def get_current_state(self, detailed=False):
+        if detailed:
+            return self.get_detailed_state()
         players_total = [self.dealer.get_current_total()]
         for player in self.players:
             players_total.append(player.get_current_total())

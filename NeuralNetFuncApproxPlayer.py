@@ -8,13 +8,14 @@ from QNetwork_Tensorflow import Network as Network2
 
 BATCH_SIZE = 5
 N_EPOCHS = 5
-N_FEATURES = 96
+N_FEATURES = 4*6*2*2
+N_BETTER_FEATURES = 52*52*2*2
 
 
 class NeuralNetFuncApproxPlayer(Player):
     def __init__(self, lmbda=0.5):
         Player.__init__(self)
-        self.network = Network2([N_FEATURES, 200, 50, 1])
+        self.network = Network2([N_FEATURES, 200, 20, 1])
         self.epsilon = 0.05
         self.lmbda = lmbda
         self.gamma = 0.7
@@ -41,6 +42,20 @@ class NeuralNetFuncApproxPlayer(Player):
             features[(dealers_first_card - 2) / 3][(current_total - 4) / 3][number_of_aces_used][action] = 1
 
         return features.reshape((N_FEATURES, ))
+
+    @staticmethod
+    def generate_detailed_features(game_state, current_cards, number_of_aces_used, action):
+        features = np.zeros([52, 52, 2, 2])
+
+        dealers_first_card = game_state[0][0]
+        dealers_first_card_value = dealers_first_card.get_suit_value() * 4 + dealers_first_card.get_number()
+        number_of_aces_used = min(number_of_aces_used, 1)
+
+        for card in current_cards:
+            card_value = card.get_suit_value() * 4 + card.get_number()
+            features[dealers_first_card_value][card_value][number_of_aces_used][action] = 1
+
+        return features.reshape((N_BETTER_FEATURES,))
 
     def choose_action(self, state):
         if state is None:
@@ -73,8 +88,8 @@ class NeuralNetFuncApproxPlayer(Player):
         game = BlackJack([self])
         self.current_total = 0
         self.number_of_aces_used = 0
-        action = self.choose_action(game.get_current_state())
-        old_state = deepcopy(game.get_current_state())
+        action = self.choose_action(game.get_detailed_state())
+        old_state = deepcopy(game.get_detailed_state())
         reward = 0
 
         while not game.game_over:
@@ -89,8 +104,8 @@ class NeuralNetFuncApproxPlayer(Player):
             if game.game_over:
                 target_q = 0
             else:
-                target_q = max(self.network.get_q_value(self.generate_features(game.get_current_state(), new_total, new_n_aces, HIT)),
-                               self.network.get_q_value(self.generate_features(game.get_current_state(), new_total, new_n_aces, STICK)))
+                target_q = max(self.network.get_q_value(self.generate_features(game.get_detailed_state(), new_total, new_n_aces, HIT)),
+                               self.network.get_q_value(self.generate_features(game.get_detailed_state(), new_total, new_n_aces, STICK)))
             target = reward + self.gamma * target_q
 
             if len(self.batch[0]) < BATCH_SIZE:
@@ -100,7 +115,7 @@ class NeuralNetFuncApproxPlayer(Player):
                 self.network.gradient_descent(self.batch, N_EPOCHS)
                 self.batch = [[], []]
 
-            old_state = deepcopy(game.get_current_state())
+            old_state = deepcopy(game.get_detailed_state())
             action = self.choose_action(old_state)
         return reward
 

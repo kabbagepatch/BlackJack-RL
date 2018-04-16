@@ -21,11 +21,11 @@ class Network(object):
 
         layer_input = tf.reshape(self.x, [-1, layer_sizes[0]])
         for i in range(0, self.num_layers - 2):
-            layer_output = tf.nn.relu(tf.matmul(layer_input, self.weights[i]) + self.biases[i])
+            layer_output = tf.nn.sigmoid(tf.matmul(layer_input, self.weights[i]) + self.biases[i])
             layer_output_dropped = tf.nn.dropout(layer_output, self.pkeep)
             layer_input = layer_output_dropped
         ylogits = tf.matmul(layer_input, self.weights[-1]) + self.biases[-1]
-        self.y = tf.nn.relu(ylogits)
+        self.y = tf.nn.sigmoid(ylogits)
 
         # placeholder for correct labels
         self.y_ = tf.placeholder(tf.float32, [None, self.n_classes])

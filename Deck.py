@@ -40,3 +40,15 @@ class Card:
             return 'black'
 
         return 'red'
+
+    def get_suit_value(self):
+        if self.suit == 'S':
+            return 0
+        if self.suit == 'C':
+            return 1
+        if self.suit == 'H':
+            return 2
+        return 3
+
+    def get_number(self):
+        return self.number

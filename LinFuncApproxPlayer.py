@@ -4,18 +4,19 @@ from BlackJack import BlackJack
 from Player import Player, HIT, STICK
 from copy import deepcopy
 
-N_FEATURES = 96
+N_FEATURES = 4*6*2*2
+N_DETAILED_FEATURES = 52*52*2*2
 
 
 class LinFuncApproxPlayer(Player):
-    def __init__(self, lmbda=0.5):
+    def __init__(self, lmbda=0.5, use_detailed_features=False):
         Player.__init__(self)
-        self.N = np.zeros([11, 21, 5, 2])
-        self.W = np.zeros([N_FEATURES, ])
+        self.W = np.zeros([N_DETAILED_FEATURES, ]) if use_detailed_features else np.zeros([N_FEATURES, ])
         self.epsilon = 0.05
         self.lmbda = lmbda
         self.gamma = 0.7
         self.last_reward = 0
+        self.use_detailed_features = use_detailed_features
 
     @staticmethod
     def generate_features(game_state, current_total, number_of_aces_used, action):
@@ -38,8 +39,25 @@ class LinFuncApproxPlayer(Player):
 
         return features.reshape((N_FEATURES, ))
 
+    @staticmethod
+    def generate_detailed_features(game_state, current_cards, number_of_aces_used, action):
+        features = np.zeros([52, 52, 2, 2])
+
+        dealers_first_card = game_state[0][0]
+        dealers_first_card_value = dealers_first_card.get_suit_value() * 4 + dealers_first_card.get_number()
+        number_of_aces_used = min(number_of_aces_used, 1)
+
+        for card in current_cards:
+            card_value = card.get_suit_value() * 13 + card.get_number() - 1
+            features[dealers_first_card_value][card_value][number_of_aces_used][action] = 1
+
+        return features.reshape((N_DETAILED_FEATURES,))
+
     def get_q_value(self, state, action):
-        return np.dot(self.generate_features(state, self.current_total, self.number_of_aces_used, action), self.W)
+        if self.use_detailed_features:
+            return np.dot(self.generate_detailed_features(state, self.current_cards, self.number_of_aces_used, action), self.W)
+        else:
+            return np.dot(self.generate_features(state, self.current_total, self.number_of_aces_used, action), self.W)
 
     def choose_action(self, state):
         if state is None:
@@ -67,14 +85,15 @@ class LinFuncApproxPlayer(Player):
         game = BlackJack([self])
         self.current_total = 0
         self.number_of_aces_used = 0
-        action = self.choose_action(game.get_current_state())
-        old_state = deepcopy(game.get_current_state())
-        eligibility_trace = np.zeros([N_FEATURES, ])
+        action = self.choose_action(game.get_current_state(self.use_detailed_features))
+        old_state = deepcopy(game.get_current_state(self.use_detailed_features))
+        eligibility_trace = np.zeros([N_DETAILED_FEATURES, ]) if self.use_detailed_features else np.zeros([N_FEATURES, ])
         reward = 0
         alpha = 0.01
 
         while not game.game_over:
             old_total = self.current_total
+            old_cards = self.current_cards
             old_n_aces = self.number_of_aces_used
             old_q = self.get_q_value(old_state, action)
 
@@ -82,12 +101,15 @@ class LinFuncApproxPlayer(Player):
             reward = self.last_reward
             new_action = self.choose_action(old_state)
 
-            new_q = self.get_q_value(game.get_current_state(), new_action) if not game.game_over else 0
+            new_q = self.get_q_value(game.get_current_state(self.use_detailed_features), new_action) if not game.game_over else 0
             delta = reward + self.gamma * new_q - old_q
-            eligibility_trace = self.gamma * self.lmbda * eligibility_trace + self.generate_features(old_state, old_total, old_n_aces, action)
+            if self.use_detailed_features:
+                eligibility_trace = self.gamma * self.lmbda * eligibility_trace + self.generate_detailed_features(old_state, old_cards, old_n_aces, action)
+            else:
+                eligibility_trace = self.gamma * self.lmbda * eligibility_trace + self.generate_features(old_state, old_total, old_n_aces, action)
             self.W = self.W + alpha * delta * eligibility_trace
 
-            old_state = deepcopy(game.get_current_state())
+            old_state = deepcopy(game.get_current_state(self.use_detailed_features))
             action = new_action
         return reward
 

@@ -8,7 +8,7 @@ from NeuralNetFuncApproxPlayer import NeuralNetFuncApproxPlayer
 from plotQValues import plotQValues
 import numpy as np
 
-'''Human vs three Random AIs'''
+# '''Human vs three Random AIs'''
 # me = HumanPlayer()
 # stupid_ai1 = RandomPlayer()
 # stupid_ai2 = RandomPlayer()
@@ -135,35 +135,14 @@ import numpy as np
 # print "MC won", sum(mc_rewards)
 # print "Random won", sum(rand_rewards)
 
-'''Neural Network Player vs Dealer'''
-players = [NeuralNetFuncApproxPlayer()]
-
-for player in players:
-    rewards = []
-    for k in range(0, 1):
-        player.reset()
-        player.run_episodes(1000, True)
-        player.epsilon = 0
-
-        for i in range(0, 100):
-            player.reset()
-            new_game = BlackJack([player])
-
-            while not new_game.game_over:
-                new_game.step([player.choose_action(new_game.get_current_state())])
-
-            rewards.append(player.last_reward > 0)
-
-    print player, "won", sum(rewards)
-
-# '''All players vs Dealer'''
-# players = [RandomPlayer(), MonteCarloPlayer(), TDLearningPlayer(), LinFuncApproxPlayer(), NeuralNetFuncApproxPlayer()]
+# '''Neural Network Player vs Dealer'''
+# players = [NeuralNetFuncApproxPlayer()]
 #
 # for player in players:
 #     rewards = []
 #     for k in range(0, 1):
 #         player.reset()
-#         player.run_episodes(1000)
+#         player.run_episodes(1000, True)
 #         player.epsilon = 0
 #
 #         for i in range(0, 100):
@@ -176,3 +155,39 @@ for player in players:
 #             rewards.append(player.last_reward > 0)
 #
 #     print player, "won", sum(rewards)
+
+'''All players vs Dealer'''
+rewards = [[], [], [], [], []]
+for k in range(0, 10):
+    print "Round", k
+    players = [RandomPlayer(), MonteCarloPlayer(), TDLearningPlayer(), LinFuncApproxPlayer(),
+               LinFuncApproxPlayer(use_detailed_features=True), NeuralNetFuncApproxPlayer()]
+    player_index = 0
+    for player in players:
+        player.reset()
+        player.run_episodes(2000 if type(player) == NeuralNetFuncApproxPlayer or player.use_detailed_features else 50000)
+        player.epsilon = 0
+
+        for i in range(0, 100):
+            player.reset()
+            new_game = BlackJack([player])
+
+            while not new_game.game_over:
+                new_game.step([player.choose_action(new_game.get_current_state(player.use_detailed_features))])
+
+            rewards[player_index].append(player.last_reward > 0)
+
+        player_rewards = rewards[player_index][k * 100: (k + 1) * 100]
+        print type(player), "won", sum(player_rewards), "out of", len(player_rewards)
+        player_index += 1
+    print "\n"
+
+print "Rounds over\n"
+players = [RandomPlayer(), MonteCarloPlayer(), TDLearningPlayer(), LinFuncApproxPlayer(),
+           LinFuncApproxPlayer(use_detailed_features=True), NeuralNetFuncApproxPlayer]
+player_index = 0
+for player in players:
+    player_rewards = rewards[player_index]
+    print type(player), "won", sum(player_rewards), "out of", len(player_rewards)
+    print "Winning percentage", (sum(player_rewards) * 100. / len(player_rewards)), "%\n"
+    player_index += 1
